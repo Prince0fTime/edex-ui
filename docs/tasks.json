@@ -1,0 +1,115 @@
+{
+  "project": "edex-ui",
+  "feature_branch": "feature/host-client-browser-skeleton",
+  "last_updated": "2026-09-02T21:38:15Z",
+  "tasks": [
+    {
+      "id": "PR1",
+      "title": "Settings schema + UI placeholders",
+      "branch": "feature/host-client-browser-settings",
+      "files": ["src/_boot.js", "src/_renderer.js"],
+      "estimate_hours": 2,
+      "depends_on": [],
+      "description": "Add mode/remote/code-server/browser keys to defaults and expose fields in Settings modal. No behavior changes yet."
+    },
+    {
+      "id": "PR2",
+      "title": "Pass host param to Terminal client",
+      "branch": "feature/host-client-browser-term-client",
+      "files": ["src/_renderer.js"],
+      "estimate_hours": 1,
+      "depends_on": ["PR1"],
+      "description": "When settings.mode === 'client', pass host and remotePort into new Terminal({role:'client', host, port})."
+    },
+    {
+      "id": "PR3",
+      "title": "Create-browser-window IPC + renderer button",
+      "branch": "feature/host-client-browser-ipc",
+      "files": ["src/_boot.js", "src/_renderer.js"],
+      "estimate_hours": 3,
+      "depends_on": ["PR1"],
+      "description": "Add ipcMain.handle('create-browser-window') (main) and renderer UI to call it."
+    },
+    {
+      "id": "PR4",
+      "title": "Code-server service skeleton + IPC",
+      "branch": "feature/host-client-browser-codeserver-skeleton",
+      "files": ["src/services/code-server.service.js", "src/_boot.js"],
+      "estimate_hours": 8,
+      "depends_on": ["PR1","PR3"],
+      "description": "start/stop/status wrapper for code-server (prototype assumes code-server in PATH)."
+    },
+    {
+      "id": "PR5",
+      "title": "Network control service skeleton (express + mDNS)",
+      "branch": "feature/host-client-browser-netservice",
+      "files": ["src/services/network.service.js", "src/_boot.js"],
+      "estimate_hours": 8,
+      "depends_on": ["PR1"],
+      "description": "Pairing endpoints, /sessions, /fs/list (read-only), bonjour advertisement."
+    },
+    {
+      "id": "PR6",
+      "title": "Terminal WS auth (token) support",
+      "branch": "feature/host-client-browser-term-wsauth",
+      "files": ["src/classes/terminal.class.js", "src/services/network.service.js"],
+      "estimate_hours": 6,
+      "depends_on": ["PR5"],
+      "description": "Verify Authorization token on incoming WS connections to terminals."
+    },
+    {
+      "id": "PR7",
+      "title": "remoteClient helper + filesystem read-only integration",
+      "branch": "feature/host-client-browser-remoteclient",
+      "files": ["src/services/remoteClient.js", "src/classes/filesystem.class.js"],
+      "estimate_hours": 10,
+      "depends_on": ["PR5","PR2"],
+      "description": "Renderer helper to call host control endpoints; filesystem.class uses it in client mode for read operations."
+    },
+    {
+      "id": "PR8",
+      "title": "Discovery & pairing UI",
+      "branch": "feature/host-client-browser-pairing-ui",
+      "files": ["src/_renderer.js", "src/ui/connectDialog.js"],
+      "estimate_hours": 8,
+      "depends_on": ["PR5","PR3"],
+      "description": "UI for discover/enter pairing codes and host approval flow."
+    },
+    {
+      "id": "PR9",
+      "title": "Session visibility & spawn remote-only sessions",
+      "branch": "feature/host-client-browser-session-visibility",
+      "files": ["src/services/network.service.js", "src/_renderer.js"],
+      "estimate_hours": 8,
+      "depends_on": ["PR5","PR6"],
+      "description": "Allow spawn of client-only sessions and endpoints/UI to set visibility."
+    },
+    {
+      "id": "PR10",
+      "title": "Native process launcher (spawn) + tracking",
+      "branch": "feature/host-client-browser-spawn-native",
+      "files": ["src/_boot.js", "src/_renderer.js"],
+      "estimate_hours": 4,
+      "depends_on": ["PR5"],
+      "description": "ipcMain handle to spawn native apps and show process list in UI; host-only by default."
+    },
+    {
+      "id": "PR11",
+      "title": "Docs & integration tests (DEVICES.md)",
+      "branch": "feature/host-client-browser-docs",
+      "files": ["docs/DEVICES.md", "README.md"],
+      "estimate_hours": 2,
+      "depends_on": ["PR1"],
+      "description": "Howto for host/client setup, pairing, Open Browser & Start VS Code flows, test steps."
+    },
+    {
+      "id": "PR12",
+      "title": "Polish: TLS/WSS, WebRTC, scopes, full FS write",
+      "branch": "feature/host-client-browser-polish",
+      "files": ["src/services/network.service.js", "src/services/code-server.service.js"],
+      "estimate_hours": 80,
+      "depends_on": ["PR5","PR6","PR7","PR4"],
+      "description": "Secure internet access (TLS/WSS or WebRTC), token scopes, TURN/STUN support, production hardening."
+    }
+  ]
+}
