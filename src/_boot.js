@@ -93,7 +93,15 @@ if (!fs.existsSync(settingsFile)) {
         hideDotfiles: false,
         fsListView: false,
         experimentalGlobeFeatures: false,
-        experimentalFeatures: false
+        experimentalFeatures: false,
+        // New settings for Host/Client mode and browser/code-server features
+        mode: "local", // "local" | "host" | "client"
+        remoteHost: null,
+        remotePort: null,
+        allowRemoteConnections: false,
+        pairing: { enabled: true, tokenLifetimeSeconds: 300 },
+        enableBrowserControls: true,
+        codeServer: { enabled: false, binaryPath: null, defaultPort: 8085 }
     }, "", 4));
     signale.info(`Default settings written to ${settingsFile}`);
 }
@@ -343,6 +351,31 @@ app.on('ready', async () => {
     });
     ipc.on("setKbOverride", (e, arg) => {
         kbOverride = arg;
+    });
+
+    // IPC handler: create a sandboxed browser window (renderer can invoke)
+    ipc.handle('create-browser-window', async (event, { url: targetUrl, options }) => {
+        options = options || {};
+        const bwOptions = Object.assign({}, {
+            width: 1200,
+            height: 800,
+            webPreferences: {
+                nodeIntegration: false,
+                contextIsolation: true,
+                sandbox: true,
+                enableRemoteModule: false
+            }
+        }, options);
+
+        try {
+            const bw = new BrowserWindow(bwOptions);
+            // loadURL may throw if invalid, catch but still return window id
+            try { await bw.loadURL(targetUrl); } catch (err) { signale.warn('Failed to load URL in browser window', err); }
+            return { success: true, id: bw.id };
+        } catch (err) {
+            signale.error('create-browser-window error', err);
+            return { success: false, error: String(err) };
+        }
     });
 });
 
