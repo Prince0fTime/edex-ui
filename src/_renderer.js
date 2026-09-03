@@ -93,9 +93,9 @@ window._loadTheme = theme => {
     }
 
     // Load fonts
-    let mainFont = new FontFace(theme.cssvars.font_main, `url("${path.join(fontsDir, theme.cssvars.font_main.toLowerCase().replace(/ /g, '_')+'.woff2').replace(/\\/g, '/')}")`);
-    let lightFont = new FontFace(theme.cssvars.font_main_light, `url("${path.join(fontsDir, theme.cssvars.font_main_light.toLowerCase().replace(/ /g, '_')+'.woff2').replace(/\\/g, '/')}")`);
-    let termFont = new FontFace(theme.terminal.fontFamily, `url("${path.join(fontsDir, theme.terminal.fontFamily.toLowerCase().replace(/ /g, '_')+'.woff2').replace(/\\/g, '/')}")`);
+    let mainFont = new FontFace(theme.cssvars.font_main, `url("${path.join(fontsDir, theme.cssvars.font_main.toLowerCase().replace(/ /g, '_')+'.woff2').replace(/\\/g, '/')}"`);
+    let lightFont = new FontFace(theme.cssvars.font_main_light, `url("${path.join(fontsDir, theme.cssvars.font_main_light.toLowerCase().replace(/ /g, '_')+'.woff2').replace(/\\/g, '/')}"`);
+    let termFont = new FontFace(theme.terminal.fontFamily, `url("${path.join(fontsDir, theme.terminal.fontFamily.toLowerCase().replace(/ /g, '_')+'.woff2').replace(/\\/g, '/')}"`);
 
     document.fonts.add(mainFont);
     document.fonts.load("12px "+theme.cssvars.font_main);
@@ -127,7 +127,7 @@ window._loadTheme = theme => {
     }
 
     * {
-   	   ${(window.settings.nocursorOverride || window.settings.nocursor) ? "cursor: none !important;" : ""}
+	       ${(window.settings.nocursorOverride || window.settings.nocursor) ? "cursor: none !important;" : ""}
 	}
 
     ${window._purifyCSS(theme.injectCSS || "")}
@@ -297,7 +297,7 @@ async function displayTitleScreen() {
 
     await _delay(100);
 
-    title.setAttribute("style", `background-color: rgb(${window.theme.r}, ${window.theme.g}, ${window.theme.b});border-bottom: 5px solid rgb(${window.theme.r}, ${window.theme.g}, ${window.theme.b});`);
+    title.setAttribute("style", `background-color: rgb(${window.theme.r}, ${window.theme.g}, ${window.theme.b});border-bottom: 5px solid rgb(${window.theme.r}, ${window.theme.g}, ${window.theme.b[...`);
 
     await _delay(300);
 
@@ -487,7 +487,7 @@ async function initUI() {
     window.onmouseup = e => {
         if (window.keyboard.linkedToTerm) window.term[window.currentTerm].term.focus();
     };
-    window.term[0].term.writeln("\033[1m"+`Welcome to eDEX-UI v${electron.remote.app.getVersion()} - Electron v${process.versions.electron}`+"\033[0m");
+    window.term[window.currentTerm].term.writeln("\033[1m"+`Welcome to eDEX-UI v${electron.remote.app.getVersion()} - Electron v${process.versions.electron}`+"\033[0m");
 
     await _delay(100);
 
@@ -507,6 +507,16 @@ async function initUI() {
     await _delay(200);
 
     window.updateCheck = new UpdateChecker();
+
+    // Add Open Browser quick button if browser controls enabled
+    if (window.settings.enableBrowserControls) {
+        const btn = document.createElement('button');
+        btn.id = 'openBrowserBtn';
+        btn.innerText = 'Open Browser';
+        btn.setAttribute('style', 'position:fixed;right:12px;bottom:12px;z-index:100000;padding:10px 14px;background:rgba(0,0,0,0.6);color:#fff;border:1px solid rgba(255,255,255,0.08);border-radius:6px;');
+        document.body.appendChild(btn);
+        btn.addEventListener('click', () => { window.openBrowser(); });
+    }
 }
 
 window.themeChanger = theme => {
@@ -695,6 +705,61 @@ window.openSettings = async () => {
                         <td>Local port to use for UI-shell connection</td>
                         <td><input type="number" id="settingsEditor-port" value="${window.settings.port}"></td>
                     </tr>
+                    <!-- New host/client and browser settings -->
+                    <tr>
+                        <td>mode</td>
+                        <td>Run the app as local, host, or client</td>
+                        <td><select id="settingsEditor-mode">
+                            <option>${window.settings.mode}</option>
+                            <option>local</option>
+                            <option>host</option>
+                            <option>client</option>
+                        </select></td>
+                    </tr>
+                    <tr>
+                        <td>remoteHost</td>
+                        <td>IP or hostname of the host to connect to (client mode)</td>
+                        <td><input type="text" id="settingsEditor-remoteHost" value="${window.settings.remoteHost || ''}"></td>
+                    </tr>
+                    <tr>
+                        <td>remotePort</td>
+                        <td>Port to use for terminal connections on remote host</td>
+                        <td><input type="number" id="settingsEditor-remotePort" value="${window.settings.remotePort || ''}"></td>
+                    </tr>
+                    <tr>
+                        <td>allowRemoteConnections</td>
+                        <td>Allow other instances to connect to this host</td>
+                        <td><select id="settingsEditor-allowRemoteConnections">
+                            <option>${window.settings.allowRemoteConnections}</option>
+                            <option>${!window.settings.allowRemoteConnections}</option>
+                        </select></td>
+                    </tr>
+                    <tr>
+                        <td>enableBrowserControls</td>
+                        <td>Enable built-in browser & VS Code controls</td>
+                        <td><select id="settingsEditor-enableBrowserControls">
+                            <option>${window.settings.enableBrowserControls}</option>
+                            <option>${!window.settings.enableBrowserControls}</option>
+                        </select></td>
+                    </tr>
+                    <tr>
+                        <td>codeServer.enabled</td>
+                        <td>Enable code-server (VS Code) helper</td>
+                        <td><select id="settingsEditor-codeServer-enabled">
+                            <option>${(window.settings.codeServer && window.settings.codeServer.enabled) ? 'true' : 'false'}</option>
+                            <option>${(window.settings.codeServer && window.settings.codeServer.enabled) ? 'false' : 'true'}</option>
+                        </select></td>
+                    </tr>
+                    <tr>
+                        <td>codeServer.binaryPath</td>
+                        <td>Path to code-server binary (optional)</td>
+                        <td><input type="text" id="settingsEditor-codeServer-path" value="${(window.settings.codeServer && window.settings.codeServer.binaryPath) || ''}"></td>
+                    </tr>
+                    <tr>
+                        <td>codeServer.defaultPort</td>
+                        <td>Default port to use for code-server</td>
+                        <td><input type="number" id="settingsEditor-codeServer-port" value="${(window.settings.codeServer && window.settings.codeServer.defaultPort) || 8085}"></td>
+                    </tr>
                     <tr>
                         <td>pingAddr</td>
                         <td>IPv4 address to test Internet connectivity</td>
@@ -846,7 +911,18 @@ window.writeSettingsFile = () => {
         hideDotfiles: (document.getElementById("settingsEditor-hideDotfiles").value === "true"),
         fsListView: (document.getElementById("settingsEditor-fsListView").value === "true"),
         experimentalGlobeFeatures: (document.getElementById("settingsEditor-experimentalGlobeFeatures").value === "true"),
-        experimentalFeatures: (document.getElementById("settingsEditor-experimentalFeatures").value === "true")
+        experimentalFeatures: (document.getElementById("settingsEditor-experimentalFeatures").value === "true"),
+        // New settings from editor
+        mode: document.getElementById("settingsEditor-mode").value || 'local',
+        remoteHost: document.getElementById("settingsEditor-remoteHost").value || null,
+        remotePort: (document.getElementById("settingsEditor-remotePort").value) ? Number(document.getElementById("settingsEditor-remotePort").value) : null,
+        allowRemoteConnections: (document.getElementById("settingsEditor-allowRemoteConnections").value === 'true'),
+        enableBrowserControls: (document.getElementById("settingsEditor-enableBrowserControls").value === 'true'),
+        codeServer: {
+            enabled: (document.getElementById("settingsEditor-codeServer-enabled").value === 'true'),
+            binaryPath: document.getElementById("settingsEditor-codeServer-path").value || null,
+            defaultPort: Number(document.getElementById("settingsEditor-codeServer-port").value || 8085)
+        }
     };
 
     Object.keys(window.settings).forEach(key => {
@@ -859,9 +935,45 @@ window.writeSettingsFile = () => {
     document.getElementById("settingsEditorStatus").innerText = "New values written to settings.json file at "+new Date().toTimeString();
 };
 
+// New: Open Browser helpers
+window.openBrowser = () => {
+    if (!window.settings.enableBrowserControls) {
+        new Modal({ type: 'error', title: 'Browser disabled', message: 'Browser controls are disabled in settings.' }, () => {});
+        return;
+    }
+
+    new Modal({
+        type: 'custom',
+        title: 'Open Browser',
+        html: `<input id="openBrowserUrl" placeholder="https://example.com" style="width:100%;padding:8px;border-radius:4px;border:1px solid rgba(255,255,255,0.06)"/>`,
+        buttons: [
+            { label: 'Open', action: 'window.requestOpenBrowser()' },
+            { label: 'Cancel', action: '' }
+        ]
+    }, () => {
+        const el = document.getElementById('openBrowserUrl');
+        if (el) el.focus();
+    });
+};
+
+window.requestOpenBrowser = async () => {
+    const url = document.getElementById('openBrowserUrl') ? document.getElementById('openBrowserUrl').value.trim() : null;
+    if (!url) return;
+    try {
+        const res = await ipc.invoke('create-browser-window', { url });
+        if (!res || !res.success) {
+            new Modal({ type: 'error', title: 'Error opening browser', message: res && res.error ? res.error : 'Unknown error' }, () => {});
+        } else {
+            new Modal({ type: 'info', title: 'Browser opened', message: 'Browser window created.' }, () => {});
+        }
+    } catch (e) {
+        new Modal({ type: 'error', title: 'Error', message: String(e) }, () => {});
+    }
+};
+
 window.toggleFullScreen = () => {
-    let useFullscreen = (electronWin.isFullScreen() ? false : true);
-    electronWin.setFullScreen(useFullscreen);
+    let useFullscreen = (electron.remote.getCurrentWindow().isFullScreen() ? false : true);
+    electron.remote.getCurrentWindow().setFullScreen(useFullscreen);
 
     //Update settings
     window.lastWindowState["useFullscreen"] = useFullscreen;
@@ -884,7 +996,7 @@ window.openShortcutsHelp = () => {
         "FUZZY_SEARCH": "Search for entries in the current working directory.",
         "FS_LIST_VIEW": "Toggle between list and grid view in the file browser.",
         "FS_DOTFILES": "Toggle hidden files and directories in the file browser.",
-        "KB_PASSMODE": "Toggle the on-screen keyboard's \"Password Mode\", which allows you to safely<br>type sensitive information even if your screen might be recorded (disable visual input feedback).",
+        "KB_PASSMODE": "Toggle the on-screen keyboard's \"Password Mode\"",
         "DEV_DEBUG": "Open Chromium Dev Tools, for debugging purposes.",
         "DEV_RELOAD": "Trigger front-end hot reload."
     };
